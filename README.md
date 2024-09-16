@@ -1,7 +1,18 @@
 Use Any java Compiler
+1) first test case
+-> javac javac Solution.java
 
-javac javac Solution.java
+-> java Solution
+Value of coefficient is 3 
 
-java Solution
+2) Second test case
+
+-> javac javac Solution.java
+
+-> java Solution
+Value of coefficient is  28735619723837
+
+   
+
 
 
