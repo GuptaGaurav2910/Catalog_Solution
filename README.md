@@ -1,6 +1,6 @@
 Use Any java Compiler
 1) first test case
-2) 
+   
 -> javac javac Solution.java
 
 -> java Solution
