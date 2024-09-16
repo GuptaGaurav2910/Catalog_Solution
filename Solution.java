@@ -1,87 +1,64 @@
-import org.json.JSONObject;
 import java.util.*;
-import java.math.BigInteger;
 
-public class SecretSharing {
-
+public class PolynomialConstantFinder {
     public static void main(String[] args) {
-        // Example JSON input
-        String jsonString = "{\n" +
-                "    \"keys\": {\n" +
-                "        \"n\": 4,\n" +
-                "        \"k\": 3\n" +
-                "    },\n" +
-                "    \"1\": {\n" +
-                "        \"base\": \"10\",\n" +
-                "        \"value\": \"4\"\n" +
-                "    },\n" +
-                "    \"2\": {\n" +
-                "        \"base\": \"2\",\n" +
-                "        \"value\": \"111\"\n" +
-                "    },\n" +
-                "    \"3\": {\n" +
-                "        \"base\": \"10\",\n" +
-                "        \"value\": \"12\"\n" +
-                "    },\n" +
-                "    \"6\": {\n" +
-                "        \"base\": \"4\",\n" +
-                "        \"value\": \"213\"\n" +
-                "    }\n" +
-                "}";
+        String inputString = "{\"keys\": {\"n\": 4, \"k\": 3}, \"1\": {\"base\": \"10\", \"value\": \"4\"}, \"2\": {\"base\": \"2\", \"value\": \"111\"}, \"3\": {\"base\": \"10\", \"value\": \"12\"}, \"6\": {\"base\": \"4\", \"value\": \"213\"}}";
 
-        JSONObject jsonObject = new JSONObject(jsonString);
-        JSONObject keys = jsonObject.getJSONObject("keys");
-        int n = keys.getInt("n");
-        int k = keys.getInt("k");
-
-        List<Point> points = new ArrayList<>();
-        for (String key : jsonObject.keySet()) {
-            if (!key.equals("keys")) {
-                JSONObject root = jsonObject.getJSONObject(key);
-                int base = root.getInt("base");
-                String value = root.getString("value");
-                int y = Integer.parseInt(value, base);
-                int x = Integer.parseInt(key);
-                points.add(new Point(x, y));
-            }
-        }
-
-        if (points.size() < k) {
-            throw new IllegalArgumentException("Not enough points to determine the polynomial");
-        }
-
-        // Perform Lagrange interpolation
-        double constantTerm = lagrangeInterpolation(points, k);
-        System.out.println("Constant term (c): " + constantTerm);
+        Map<Integer, Integer> points = extractPoints(inputString);
+        double constantTerm = findConstantTerm(points);
+        System.out.println("Constant term: " + constantTerm);
     }
 
-    private static double lagrangeInterpolation(List<Point> points, int k) {
-        double c = 0.0;
+    private static Map<Integer, Integer> extractPoints(String inputString) {
+        Map<Integer, Integer> points = new HashMap<>();
 
-        for (int i = 0; i < k; i++) {
-            Point xi = points.get(i);
-            double li = 1.0;
-            double yi = xi.y;
+        try {
+            // Remove JSON-like structure and split by commas
+            String[] parts = inputString.replaceAll("\\{|}|\"", "").split(",");
 
-            for (int j = 0; j < k; j++) {
-                if (i != j) {
-                    Point xj = points.get(j);
-                    li *= (0 - xj.x) / (xi.x - xj.x);
+            // Extract number of points (n) and minimum roots required (k)
+            int n = Integer.parseInt(parts[1].split(":")[1].trim());
+            int k = Integer.parseInt(parts[2].split(":")[1].trim());
+
+            // Iterate through parts to extract x, base (skip), and value
+            for (String part : parts) {
+                if (part.contains(":")) {
+                    String[] keyValue = part.split(":");
+                    if (keyValue.length >= 3) {
+                        int x = Integer.parseInt(keyValue[0].trim());
+                        // Skip base (it's not needed)
+                        int y = Integer.parseInt(keyValue[2].trim(), Integer.parseInt(keyValue[1].trim()));
+                        points.put(x, y);
+                    }
                 }
             }
-            c += li * yi;
+        } catch (Exception e) {
+            System.out.println("Error processing input string: " + e.getMessage());
+            e.printStackTrace();
         }
 
-        return c;
+        return points;
     }
 
-    private static class Point {
-        int x;
-        int y;
+    private static double findConstantTerm(Map<Integer, Integer> points) {
+        int n = points.size();
+        double constantTerm = 0;
 
-        Point(int x, int y) {
-            this.x = x;
-            this.y = y;
+        // Convert points to arrays
+        Integer[] xValues = points.keySet().toArray(new Integer[0]);
+        Integer[] yValues = points.values().toArray(new Integer[0]);
+
+        // Compute the Lagrange polynomial and evaluate at x = 0
+        for (int i = 0; i < n; i++) {
+            double term = yValues[i];
+            for (int j = 0; j < n; j++) {
+                if (i != j) {
+                    term *= (0 - xValues[j]) / (double) (xValues[i] - xValues[j]);
+                }
+            }
+            constantTerm += term;
         }
+
+        return constantTerm;
     }
 }
